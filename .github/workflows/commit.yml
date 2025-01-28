@@ -18,7 +18,7 @@ jobs:
 
     env:
       NEED_EXTRACTION: "true"            # 是否需要解压文件
-      USE_ZIP_NAME_AS_DIRECTORY: "false" # 是否使用 ZIP 名称作为目录
+      USE_ZIP_NAME_AS_DIRECTORY: "true" # 是否使用 ZIP 名称作为目录
       DELETE_AFTER_EXTRACTION: "true"    # 解压后是否删除压缩包
 
     steps:
