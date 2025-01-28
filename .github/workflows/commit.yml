@@ -1,4 +1,4 @@
- name: Unzip and Commit Changes
+name: Unzip and Commit Changes
 
 on:
   push:
@@ -45,6 +45,8 @@ jobs:
       - name: Check if extraction is needed
         if: env.NEED_EXTRACTION == 'true'
         run: |
+          echo "Starting extraction process..."
+          
           # 查找根目录下的压缩文件
           for file in $(find . -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.tar.bz2' -o -name '*.tar.xz' -o -name '*.rar' -o -name '*.7z' \)); do
             echo "Processing $file"
@@ -99,6 +101,9 @@ jobs:
       - name: Commit and push changes
         if: env.NEED_EXTRACTION == 'true'
         run: |
+          echo "Preparing to commit changes..."
+
+          # 配置 Git
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           
