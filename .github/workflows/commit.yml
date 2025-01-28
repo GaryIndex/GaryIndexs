@@ -1,97 +1,98 @@
-name: Extract Uploaded Archives
+name: Unzip and Commit Changes
 
 on:
   push:
     paths:
-      - '**/*.zip'
-      - '**/*.tar'
-      - '**/*.tar.gz'
-      - '**/*.tgz'
+      - '*.zip'
+      - '*.tar.gz'
+      - '*.tar.bz2'
+      - '*.tar.xz'
+      - '*.rar'
+      - '*.7z'
 
 jobs:
-  extract-archives:
+  unzip:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     env:
-      EXTRACT_ENABLED: true
-      EXTRACT_TO_ROOT: false
-      DELETE_ARCHIVE: true
+      NEED_EXTRACTION: "true"            # 是否需要解压文件
+      USE_ZIP_NAME_AS_DIRECTORY: "false" # 是否使用 ZIP 名称作为目录
+      DELETE_AFTER_EXTRACTION: "true"    # 解压后是否删除压缩包
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # 检出代码库
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Install dependencies
+      # 安装必要的解压工具
+      - name: Install necessary tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y unzip tar
+          sudo apt-get install -y unzip p7zip-full p7zip-rar rar tar
 
-      - name: Debug Changed Files
+      # 调试环境变量和当前目录状态
+      - name: Debugging environment
         run: |
-          echo "Files changed in this push:"
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }}
+          echo "NEED_EXTRACTION=$NEED_EXTRACTION"
+          echo "USE_ZIP_NAME_AS_DIRECTORY=$USE_ZIP_NAME_AS_DIRECTORY"
+          echo "DELETE_AFTER_EXTRACTION=$DELETE_AFTER_EXTRACTION"
+          echo "Current directory structure:"
+          ls -al
 
-      - name: Debug Archive Files
+      # 判断是否需要解压
+      - name: Check if extraction is needed
+        if: env.NEED_EXTRACTION == 'true'
         run: |
-          echo "Listing archive files:"
-          find . -type f \( -name '*.zip' -o -name '*.tar' -o -name '*.tar.gz' -o -name '*.tgz' \)
+          # 查找根目录下的压缩文件
+          for file in $(find . -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.tar.bz2' -o -name '*.tar.xz' -o -name '*.rar' -o -name '*.7z' \)); do
+            echo "Processing $file"
 
-      - name: Extract Archives with Debug Logs
-        if: env.EXTRACT_ENABLED == 'true'
-        run: |
-          find . -type f \( -name '*.zip' -o -name '*.tar' -o -name '*.tar.gz' -o -name '*.tgz' \) | while read -r archive; do
-            echo "Processing $archive"
-            dir=$(dirname "$archive")
-            filename=$(basename "$archive")
-
-            if [ "${EXTRACT_TO_ROOT}" == "true" ]; then
-              target_dir="."
-            else
-              target_dir="$dir/${filename%.*}"
-            fi
-            mkdir -p "$target_dir"
-            echo "Extracting to $target_dir"
-
-            case "$archive" in
-              *.zip)
-                unzip -q "$archive" -d "$target_dir" && echo "Unzipped $archive"
-                ;;
-              *.tar)
-                tar -xf "$archive" -C "$target_dir" && echo "Extracted $archive"
-                ;;
-              *.tar.gz|*.tgz)
-                tar -xzf "$archive" -C "$target_dir" && echo "Extracted $archive"
-                ;;
-              *)
-                echo "Unsupported archive format: $archive"
+            # 判断是否使用 ZIP 名称作为目录
+            if [ "$USE_ZIP_NAME_AS_DIRECTORY" = "true" ]; then
+              echo "Using ZIP name as directory"
+              dir_name="${file%.*}"
+              mkdir -p "$dir_name"
+              if unzip "$file" -d "$dir_name"; then
+                echo "Successfully extracted $file to $dir_name"
+              else
+                echo "Error extracting $file"
                 exit 1
-                ;;
-            esac
+              fi
+            else
+              echo "Extracting directly into the current directory"
+              if unzip "$file" -d .; then
+                echo "Successfully extracted $file"
+              else
+                echo "Error extracting $file"
+                exit 1
+              fi
+            fi
 
-            if [ "${DELETE_ARCHIVE}" == "true" ]; then
-              echo "Deleting $archive"
-              rm -f "$archive"
+            # 判断是否删除压缩包
+            if [ "$DELETE_AFTER_EXTRACTION" = "true" ]; then
+              echo "Deleting $file"
+              rm "$file"
+            else
+              echo "Keeping $file"
             fi
           done
 
-      - name: Check Repository Contents
+      # 如果不需要解压，只输出调试信息
+      - name: Skip extraction
+        if: env.NEED_EXTRACTION != 'true'
         run: |
-          echo "Repository structure after extraction:"
-          ls -R
+          echo "Extraction is disabled. Skipping."
+          echo "Current directory structure:"
+          ls -al
 
-      - name: Refresh Git Index
+      # 提交解压后的更改
+      - name: Commit and push changes
+        if: env.NEED_EXTRACTION == 'true'
         run: |
-          git rm -rf --cached .
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
           git add .
-
-      - name: Commit and Push Changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          if git diff-index --quiet HEAD; then
-            echo "No changes detected. Skipping commit."
-          else
-            git commit -m "Unzipped files from archives"
-            git push
-          fi
+          git diff --cached --quiet || git commit -m "Unzipped files"
+          git push
