@@ -29,7 +29,6 @@ jobs:
       - name: Find and Extract Archives
         if: env.EXTRACT_ENABLED == 'true'
         run: |
-          # 遍历所有支持的压缩包文件
           find . -type f \( -name '*.zip' -o -name '*.tar' -o -name '*.tar.gz' -o -name '*.tgz' \) | while read -r archive; do
             echo "Processing $archive"
             dir=$(dirname "$archive")
@@ -43,7 +42,7 @@ jobs:
             fi
             mkdir -p "$target_dir"
 
-            # 根据文件后缀解压
+            # 解压操作
             case "$archive" in
               *.zip)
                 unzip -q "$archive" -d "$target_dir"
@@ -67,5 +66,10 @@ jobs:
             fi
           done
 
-      - name: List repository content
-        run: ls -R
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Unzipped files from archives"
+          git push
