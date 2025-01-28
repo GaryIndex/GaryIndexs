@@ -1,118 +1,55 @@
- name: Unzip and Commit Changes
+name: Unzip and Commit Changes
 
 on:
   push:
     paths:
-      - '*.zip'
-      - '*.tar.gz'
-      - '*.tar.bz2'
-      - '*.tar.xz'
-      - '*.rar'
-      - '*.7z'
+      - 'docsify-develop.zip'  # 监控任何 ZIP 文件的变化
 
 jobs:
   unzip:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
-    env:
-      NEED_EXTRACTION: "true"            # 是否需要解压文件
-      USE_ZIP_NAME_AS_DIRECTORY: "false" # 是否使用 ZIP 名称作为目录
-      DELETE_AFTER_EXTRACTION: "true"    # 解压后是否删除压缩包
+    permissions:
+      contents: write  # 允许 GitHub Actions 写入仓库内容
 
     steps:
-      # 检出代码库
+      # 第一步：检出仓库内容
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # 安装必要的解压工具
-      - name: Install necessary tools
+      # 第二步：解压 ZIP 文件并直接将文件放到根目录
+      - name: Unzip the files
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip p7zip-full p7zip-rar rar tar
+          for zip in $(find . -name '*.zip'); do
+            echo "Unzipping $zip"
+            if unzip -t "$zip"; then
+              # 使用临时目录解压内容
+              temp_dir=$(mktemp -d)
+              unzip "$zip" -d "$temp_dir"
+              
+              # 将解压后的内容移动到当前目录
+              shopt -s dotglob
+              mv "$temp_dir"/* .
+              shopt -u dotglob
 
-      # 调试环境变量和当前目录状态
-      - name: Debugging environment
-        run: |
-          echo "NEED_EXTRACTION=$NEED_EXTRACTION"
-          echo "USE_ZIP_NAME_AS_DIRECTORY=$USE_ZIP_NAME_AS_DIRECTORY"
-          echo "DELETE_AFTER_EXTRACTION=$DELETE_AFTER_EXTRACTION"
-          echo "Current directory structure:"
-          ls -al
-
-      # 判断是否需要解压
-      - name: Check if extraction is needed
-        if: env.NEED_EXTRACTION == 'true'
-        run: |
-          echo "Starting extraction process..."
-          
-          # 查找根目录下的压缩文件
-          for file in $(find . -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.tar.bz2' -o -name '*.tar.xz' -o -name '*.rar' -o -name '*.7z' \)); do
-            echo "Processing $file"
-
-            # 判断是否使用 ZIP 名称作为目录
-            if [ "$USE_ZIP_NAME_AS_DIRECTORY" = "true" ]; then
-              echo "Using ZIP name as directory"
-              dir_name="${file%.*}"
-              mkdir -p "$dir_name"
-              # 解压到指定目录
-              case "$file" in
-                *.zip) unzip -o "$file" -d "$dir_name" ;;
-                *.tar.gz) tar -xzf "$file" -C "$dir_name" ;;
-                *.tar.bz2) tar -xjf "$file" -C "$dir_name" ;;
-                *.tar.xz) tar -xJf "$file" -C "$dir_name" ;;
-                *.rar) unrar x -o+ "$file" "$dir_name/" ;;
-                *.7z) 7z x "$file" -o"$dir_name" ;;
-                *) echo "Unsupported file type: $file" ;;
-              esac
+              # 删除 ZIP 文件和临时目录
+              rm "$zip"
+              rm -rf "$temp_dir"
             else
-              echo "Extracting directly into the current directory"
-              # 解压到当前目录并禁用目录结构
-              case "$file" in
-                *.zip) unzip -o -j "$file" -d . ;;  # 使用 -j 禁用目录结构
-                *.tar.gz) tar -xzf "$file" -C . ;;
-                *.tar.bz2) tar -xjf "$file" -C . ;;
-                *.tar.xz) tar -xJf "$file" -C . ;;
-                *.rar) unrar x -o+ "$file" . ;;
-                *.7z) 7z x "$file" -o"." ;;
-                *) echo "Unsupported file type: $file" ;;
-              esac
-            fi
-
-            # 判断是否删除压缩包
-            if [ "$DELETE_AFTER_EXTRACTION" = "true" ]; then
-              echo "Deleting $file"
-              rm "$file"
-            else
-              echo "Keeping $file"
+              echo "Error: $zip is corrupted, skipping."
+              exit 1
             fi
           done
 
-      # 如果不需要解压，只输出调试信息
-      - name: Skip extraction
-        if: env.NEED_EXTRACTION != 'true'
-        run: |
-          echo "Extraction is disabled. Skipping."
-          echo "Current directory structure:"
-          ls -al
-
-      # 提交解压后的更改
+      # 第三步：配置 git 用户并提交更改
       - name: Commit and push changes
-        if: env.NEED_EXTRACTION == 'true'
         run: |
-          echo "Preparing to commit changes..."
-
-          # 配置 Git
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           
-          # 拉取远程分支的最新更新
-          git pull --rebase origin main || echo "No remote changes to pull"
-          
-          # 添加和提交更改
+          # 检查是否有更改
           git add .
           git diff --cached --quiet || git commit -m "Unzipped files"
           
-          # 推送更改
+          # 提交更改
           git push
