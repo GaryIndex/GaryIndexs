@@ -1,4 +1,4 @@
-name: Unzip and Commit Changes
+ name: Unzip and Commit Changes
 
 on:
   push:
@@ -68,9 +68,9 @@ jobs:
               esac
             else
               echo "Extracting directly into the current directory"
-              # 解压到当前目录
+              # 解压到当前目录并禁用目录结构
               case "$file" in
-                *.zip) unzip -o "$file" -d . ;;
+                *.zip) unzip -o -j "$file" -d . ;;  # 使用 -j 禁用目录结构
                 *.tar.gz) tar -xzf "$file" -C . ;;
                 *.tar.bz2) tar -xjf "$file" -C . ;;
                 *.tar.xz) tar -xJf "$file" -C . ;;
