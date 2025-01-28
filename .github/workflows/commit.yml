@@ -70,12 +70,12 @@ jobs:
               echo "Extracting directly into the current directory"
               # 解压到当前目录
               case "$file" in
-                *.zip) unzip -o "$file" -d . ;;
-                *.tar.gz) tar -xzf "$file" -C . ;;
-                *.tar.bz2) tar -xjf "$file" -C . ;;
-                *.tar.xz) tar -xJf "$file" -C . ;;
-                *.rar) unrar x -o+ "$file" . ;;
-                *.7z) 7z x "$file" -o"." ;;
+                *.zip) unzip -j "$file" -d . ;;  # 解压时不保留路径结构
+                *.tar.gz) tar -xzf "$file" --strip-components=1 -C . ;;  # 解压时去掉最外层目录
+                *.tar.bz2) tar -xjf "$file" --strip-components=1 -C . ;;
+                *.tar.xz) tar -xJf "$file" --strip-components=1 -C . ;;
+                *.rar) unrar x -o+ "$file" . ;;  # 默认情况下 unrar 不保留路径
+                *.7z) 7z x "$file" -o"." ;;  # 默认情况下 7z 不保留路径
                 *) echo "Unsupported file type: $file" ;;
               esac
             fi
