@@ -22,8 +22,8 @@ jobs:
       - name: Configure extraction options
         env:
           NEED_EXTRACTION: "true"            # 设置为 false 时跳过解压
-          USE_ZIP_NAME_AS_DIRECTORY: "false"  # 是否使用 ZIP 名称作为目录
-          DELETE_AFTER_EXTRACTION: "true"    # 是否删除压缩包
+          USE_ZIP_NAME_AS_DIRECTORY: " false"  # 是否使用 ZIP 名称作为目录
+          DELETE_AFTER_EXTRACTION: "true"   # 是否删除压缩包
         run: |
           if [ "$NEED_EXTRACTION" = "false" ]; then
             echo "Skipping extraction as NEED_EXTRACTION is set to false."
@@ -80,11 +80,13 @@ jobs:
                 ;;
             esac
 
-            # 使用文件名作为目录，或直接平铺解压内容
+            # 根据 USE_ZIP_NAME_AS_DIRECTORY 决定是否使用文件名作为目录
             if [ "$USE_ZIP_NAME_AS_DIRECTORY" = "true" ]; then
+              echo "Using ZIP name as directory for $file"
               mkdir -p "$file_name_no_ext"
               mv "$temp_dir"/* "$file_name_no_ext/"
             else
+              echo "Extracting files directly to current directory for $file"
               mv "$temp_dir"/* .
             fi
 
