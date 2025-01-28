@@ -85,13 +85,23 @@ jobs:
             # 判断是否优化 iOS 元数据
             if [ "$OPTIMIZE_IOS_METADATA" = "true" ]; then
               echo "Optimizing iOS metadata..."
-              # 删除 __MACOSX 文件夹
-              if [ -d "$base_name/__MACOSX" ]; then
-                echo "Removing __MACOSX folder"
-                rm -rf "$base_name/__MACOSX"
+
+              # 根据 USE_ZIP_NAME_AS_DIRECTORY 决定路径范围
+              if [ "$USE_ZIP_NAME_AS_DIRECTORY" = "true" ]; then
+                # 删除子目录中的 __MACOSX 和 .DS_Store 文件
+                if [ -d "$base_name/__MACOSX" ]; then
+                  echo "Removing __MACOSX folder in $base_name"
+                  rm -rf "$base_name/__MACOSX"
+                fi
+                find "$base_name" -name ".DS_Store" -type f -exec rm -f {} +
+              else
+                # 删除根目录中的 __MACOSX 和 .DS_Store 文件
+                if [ -d "__MACOSX" ]; then
+                  echo "Removing __MACOSX folder in current directory"
+                  rm -rf "__MACOSX"
+                fi
+                find . -maxdepth 1 -name ".DS_Store" -type f -exec rm -f {} +
               fi
-              # 删除 .DS_Store 文件
-              find "$base_name" -name ".DS_Store" -type f -exec rm -f {} +
             fi
           done
 
