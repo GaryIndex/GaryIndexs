@@ -36,7 +36,7 @@ Welcome to my GitHub profile! I am a passionate developer sharing open-source pr
 
 [![Telegram](https://img.shields.io/badge/Telegram-%40yourusername-0088cc?style=flat-square&logo=telegram&logoColor=white)](https://t.me/yourusername)
 
-[!LinkedIn](https://img.shields.io/badge/LinkedIn-your%20name-blue?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/your-name)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-your%20name-blue?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/your-name)
 
 ---
 
