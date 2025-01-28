@@ -48,34 +48,36 @@ jobs:
           echo "Starting extraction process..."
           
           # 查找根目录下的压缩文件
-          for file in $(find . -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.tar.bz2' -o -name '*.tar.xz' -o -name '*.rar' -o -name '*.7z' \)); do
+          files=$(find . -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.tar.bz2' -o -name '*.tar.xz' -o -name '*.rar' -o -name '*.7z' \))
+          echo "Found files: $files"
+          
+          for file in $files; do
             echo "Processing $file"
-
-            # 判断是否使用 ZIP 名称作为目录
+            
             if [ "$USE_ZIP_NAME_AS_DIRECTORY" = "true" ]; then
               echo "Using ZIP name as directory"
               dir_name="${file%.*}"
               mkdir -p "$dir_name"
               # 解压到指定目录
               case "$file" in
-                *.zip) unzip -o "$file" -d "$dir_name" ;;
-                *.tar.gz) tar -xzf "$file" -C "$dir_name" ;;
-                *.tar.bz2) tar -xjf "$file" -C "$dir_name" ;;
-                *.tar.xz) tar -xJf "$file" -C "$dir_name" ;;
-                *.rar) unrar x -o+ "$file" "$dir_name/" ;;
-                *.7z) 7z x "$file" -o"$dir_name" ;;
+                *.zip) unzip -o "$file" -d "$dir_name" || { echo "Error extracting $file"; exit 1; } ;;
+                *.tar.gz) tar -xzf "$file" -C "$dir_name" || { echo "Error extracting $file"; exit 1; } ;;
+                *.tar.bz2) tar -xjf "$file" -C "$dir_name" || { echo "Error extracting $file"; exit 1; } ;;
+                *.tar.xz) tar -xJf "$file" -C "$dir_name" || { echo "Error extracting $file"; exit 1; } ;;
+                *.rar) unrar x -o+ "$file" "$dir_name/" || { echo "Error extracting $file"; exit 1; } ;;
+                *.7z) 7z x "$file" -o"$dir_name" || { echo "Error extracting $file"; exit 1; } ;;
                 *) echo "Unsupported file type: $file" ;;
               esac
             else
               echo "Extracting directly into the current directory"
               # 解压到当前目录
               case "$file" in
-                *.zip) unzip -j "$file" -d . ;;  # 解压时不保留路径结构
-                *.tar.gz) tar -xzf "$file" --strip-components=1 -C . ;;  # 解压时去掉最外层目录
-                *.tar.bz2) tar -xjf "$file" --strip-components=1 -C . ;;
-                *.tar.xz) tar -xJf "$file" --strip-components=1 -C . ;;
-                *.rar) unrar x -o+ "$file" . ;;  # 默认情况下 unrar 不保留路径
-                *.7z) 7z x "$file" -o"." ;;  # 默认情况下 7z 不保留路径
+                *.zip) unzip -j "$file" -d . || { echo "Error extracting $file"; exit 1; } ;;  # 解压时不保留路径结构
+                *.tar.gz) tar -xzf "$file" --strip-components=1 -C . || { echo "Error extracting $file"; exit 1; } ;;  # 解压时去掉最外层目录
+                *.tar.bz2) tar -xjf "$file" --strip-components=1 -C . || { echo "Error extracting $file"; exit 1; } ;;
+                *.tar.xz) tar -xJf "$file" --strip-components=1 -C . || { echo "Error extracting $file"; exit 1; } ;;
+                *.rar) unrar x -o+ "$file" . || { echo "Error extracting $file"; exit 1; } ;;  # 默认情况下 unrar 不保留路径
+                *.7z) 7z x "$file" -o"." || { echo "Error extracting $file"; exit 1; } ;;  # 默认情况下 7z 不保留路径
                 *) echo "Unsupported file type: $file" ;;
               esac
             fi
