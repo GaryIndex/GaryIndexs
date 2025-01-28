@@ -18,7 +18,7 @@ jobs:
 
     env:
       NEED_EXTRACTION: "true"            # 是否需要解压文件
-      USE_ZIP_NAME_AS_DIRECTORY: "false"  # 是否使用 ZIP 名称作为目录
+      USE_ZIP_NAME_AS_DIRECTORY: "false"  # 是否使用 ZIP 名称作为根目录
       DELETE_AFTER_EXTRACTION: "true"    # 解压后是否删除压缩包
 
     steps:
@@ -49,27 +49,22 @@ jobs:
           for file in $(find . -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.tar.bz2' -o -name '*.tar.xz' -o -name '*.rar' -o -name '*.7z' \)); do
             echo "Processing $file"
 
-            # 判断是否使用 ZIP 名称作为目录
+            # 获取压缩包的基础名称（去掉路径和后缀）
+            base_name=$(basename "$file" .zip)
+
+            # 判断是否使用 ZIP 名称作为根目录
             if [ "$USE_ZIP_NAME_AS_DIRECTORY" = "true" ]; then
-              echo "Using ZIP name as directory"
-              dir_name="${file%.*}"
-              mkdir -p "$dir_name"
-              if unzip "$file" -d "$dir_name"; then
-                # 将解压后的内容平铺到目标目录，避免多余的嵌套
-                for extracted in "$dir_name"/*; do
-                  if [ -d "$extracted" ]; then
-                    mv "$extracted"/* "$dir_name"
-                    rm -r "$extracted"
-                  fi
-                done
-                echo "Successfully extracted $file to $dir_name"
+              echo "Using ZIP name as root directory: $base_name"
+              mkdir -p "$base_name"
+              if unzip "$file" -d "$base_name"; then
+                echo "Successfully extracted $file to $base_name/"
               else
                 echo "Error extracting $file"
                 exit 1
               fi
             else
               echo "Extracting directly into the current directory"
-              if unzip "$file"; then
+              if unzip "$file" -d .; then
                 echo "Successfully extracted $file"
               else
                 echo "Error extracting $file"
