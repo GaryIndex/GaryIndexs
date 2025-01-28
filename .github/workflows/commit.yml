@@ -56,11 +56,11 @@ jobs:
               mkdir -p "$dir_name"
               # 解压到指定目录
               case "$file" in
-                *.zip) unzip "$file" -d "$dir_name" ;;
+                *.zip) unzip -o "$file" -d "$dir_name" ;;
                 *.tar.gz) tar -xzf "$file" -C "$dir_name" ;;
                 *.tar.bz2) tar -xjf "$file" -C "$dir_name" ;;
                 *.tar.xz) tar -xJf "$file" -C "$dir_name" ;;
-                *.rar) unrar x "$file" "$dir_name/" ;;
+                *.rar) unrar x -o+ "$file" "$dir_name/" ;;
                 *.7z) 7z x "$file" -o"$dir_name" ;;
                 *) echo "Unsupported file type: $file" ;;
               esac
@@ -68,11 +68,11 @@ jobs:
               echo "Extracting directly into the current directory"
               # 解压到当前目录
               case "$file" in
-                *.zip) unzip "$file" -d . ;;
+                *.zip) unzip -o "$file" -d . ;;
                 *.tar.gz) tar -xzf "$file" -C . ;;
                 *.tar.bz2) tar -xjf "$file" -C . ;;
                 *.tar.xz) tar -xJf "$file" -C . ;;
-                *.rar) unrar x "$file" . ;;
+                *.rar) unrar x -o+ "$file" . ;;
                 *.7z) 7z x "$file" -o"." ;;
                 *) echo "Unsupported file type: $file" ;;
               esac
