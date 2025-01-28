@@ -3,12 +3,12 @@ name: Unzip and Commit Changes
 on:
   push:
     paths:
-      - '*.zip'
-      - '*.tar.gz'
-      - '*.tar.bz2'
-      - '*.tar.xz'
-      - '*.rar'
-      - '*.7z'  # 监控任何压缩文件的变化
+      - '**/*.zip'
+      - '**/*.tar.gz'
+      - '**/*.tar.bz2'
+      - '**/*.tar.xz'
+      - '**/*.rar'
+      - '**/*.7z'  # 监控任何压缩文件的变化
 
 jobs:
   unzip:
