@@ -1,0 +1,114 @@
+name: Unzip and Commit Changes
+
+on:
+  push:
+    paths:
+      - '*.zip'
+      - '*.tar.gz'
+      - '*.tar.bz2'
+      - '*.tar.xz'
+      - '*.rar'
+      - '*.7z'  # 监控任何压缩文件的变化
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # 允许 GitHub Actions 写入仓库内容
+
+    steps:
+      # 第一步：配置是否需要解压、是否使用 ZIP 名称作为目录、是否删除压缩包
+      - name: Configure extraction options
+        env:
+          NEED_EXTRACTION: "true"            # 设置为 false 时跳过解压
+          USE_ZIP_NAME_AS_DIRECTORY: "false"  # 是否使用 ZIP 名称作为目录
+          DELETE_AFTER_EXTRACTION: "true"    # 是否删除压缩包
+        run: |
+          if [ "$NEED_EXTRACTION" = "false" ]; then
+            echo "Skipping extraction as NEED_EXTRACTION is set to false."
+            exit 0
+          fi
+
+      # 第二步：检出仓库内容
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # 第三步：安装所需的解压工具
+      - name: Install necessary tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip p7zip-full p7zip-rar rar tar
+
+      # 第四步：解压压缩文件
+      - name: Unzip the files
+        env:
+          USE_ZIP_NAME_AS_DIRECTORY: ${{ env.USE_ZIP_NAME_AS_DIRECTORY }}
+          DELETE_AFTER_EXTRACTION: ${{ env.DELETE_AFTER_EXTRACTION }}
+        run: |
+          for file in $(find . -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.tar.bz2' -o -name '*.tar.xz' -o -name '*.rar' -o -name '*.7z' \)); do
+            echo "Processing $file"
+
+            # 获取文件名称（无扩展名）
+            file_name=$(basename "$file")
+            file_name_no_ext=${file_name%.*}
+            temp_dir=$(mktemp -d)
+
+            # 根据文件类型解压
+            case "$file" in
+              *.zip)
+                unzip "$file" -d "$temp_dir"
+                ;;
+              *.tar.gz | *.tgz)
+                tar -xzf "$file" -C "$temp_dir"
+                ;;
+              *.tar.bz2)
+                tar -xjf "$file" -C "$temp_dir"
+                ;;
+              *.tar.xz)
+                tar -xJf "$file" -C "$temp_dir"
+                ;;
+              *.rar)
+                unrar x "$file" "$temp_dir"
+                ;;
+              *.7z)
+                7z x "$file" -o"$temp_dir"
+                ;;
+              *)
+                echo "Unsupported file format: $file"
+                continue
+                ;;
+            esac
+
+            # 使用文件名作为目录，或直接平铺解压内容
+            if [ "$USE_ZIP_NAME_AS_DIRECTORY" = "true" ]; then
+              mkdir -p "$file_name_no_ext"
+              mv "$temp_dir"/* "$file_name_no_ext/"
+            else
+              mv "$temp_dir"/* .
+            fi
+
+            # 清理临时目录
+            rm -rf "$temp_dir"
+
+            # 根据 DELETE_AFTER_EXTRACTION 决定是否删除压缩包
+            if [ "$DELETE_AFTER_EXTRACTION" = "true" ]; then
+              echo "Deleting $file as DELETE_AFTER_EXTRACTION is set to true."
+              rm "$file"
+            else
+              echo "Keeping $file as DELETE_AFTER_EXTRACTION is set to false."
+            fi
+          done
+
+      # 第五步：配置 git 用户并提交更改
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+          # 检查是否有更改
+          git add .
+          git diff --cached --quiet || git commit -m "Unzipped files"
+          
+          # 提交更改
+          git push
