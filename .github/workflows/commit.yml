@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      EXTRACT_ENABLED: true         # 是否启用解压 (true/false)
-      EXTRACT_TO_ROOT: false        # 是否解压到根目录 (true/false)
-      DELETE_ARCHIVE: true          # 是否解压后删除压缩包 (true/false)
+      EXTRACT_ENABLED: true
+      EXTRACT_TO_ROOT: false
+      DELETE_ARCHIVE: true
 
     steps:
       - name: Checkout code
@@ -26,32 +26,36 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y unzip tar
 
-      - name: Find and Extract Archives
+      - name: Debug Archive Files
+        run: |
+          echo "Listing archive files:"
+          find . -type f \( -name '*.zip' -o -name '*.tar' -o -name '*.tar.gz' -o -name '*.tgz' \)
+
+      - name: Extract Archives with Debug Logs
         if: env.EXTRACT_ENABLED == 'true'
         run: |
           find . -type f \( -name '*.zip' -o -name '*.tar' -o -name '*.tar.gz' -o -name '*.tgz' \) | while read -r archive; do
             echo "Processing $archive"
             dir=$(dirname "$archive")
             filename=$(basename "$archive")
-            
-            # 目标解压目录
+
             if [ "${EXTRACT_TO_ROOT}" == "true" ]; then
               target_dir="."
             else
               target_dir="$dir/${filename%.*}"
             fi
             mkdir -p "$target_dir"
+            echo "Extracting to $target_dir"
 
-            # 解压操作
             case "$archive" in
               *.zip)
-                unzip -q "$archive" -d "$target_dir"
+                unzip -q "$archive" -d "$target_dir" && echo "Unzipped $archive"
                 ;;
               *.tar)
-                tar -xf "$archive" -C "$target_dir"
+                tar -xf "$archive" -C "$target_dir" && echo "Extracted $archive"
                 ;;
               *.tar.gz|*.tgz)
-                tar -xzf "$archive" -C "$target_dir"
+                tar -xzf "$archive" -C "$target_dir" && echo "Extracted $archive"
                 ;;
               *)
                 echo "Unsupported archive format: $archive"
@@ -59,17 +63,19 @@ jobs:
                 ;;
             esac
 
-            # 删除压缩包（可选）
             if [ "${DELETE_ARCHIVE}" == "true" ]; then
               echo "Deleting $archive"
               rm -f "$archive"
             fi
           done
 
+      - name: Check Git Status
+        run: git status
+
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Unzipped files from archives"
+          git commit -m "Unzipped files from archives" || echo "Nothing to commit"
           git push
