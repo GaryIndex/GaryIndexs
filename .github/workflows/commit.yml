@@ -18,8 +18,9 @@ jobs:
 
     env:
       NEED_EXTRACTION: "true"            # 是否需要解压文件
-      USE_ZIP_NAME_AS_DIRECTORY: "false"  # 是否使用 ZIP 名称作为根目录
+      USE_ZIP_NAME_AS_DIRECTORY: "false" # 是否使用 ZIP 名称作为根目录
       DELETE_AFTER_EXTRACTION: "true"    # 解压后是否删除压缩包
+      OPTIMIZE_IOS_METADATA: "true"      # 是否优化 iOS 元数据
 
     steps:
       # 检出代码库
@@ -38,6 +39,7 @@ jobs:
           echo "NEED_EXTRACTION=$NEED_EXTRACTION"
           echo "USE_ZIP_NAME_AS_DIRECTORY=$USE_ZIP_NAME_AS_DIRECTORY"
           echo "DELETE_AFTER_EXTRACTION=$DELETE_AFTER_EXTRACTION"
+          echo "OPTIMIZE_IOS_METADATA=$OPTIMIZE_IOS_METADATA"
           echo "Current directory structure:"
           ls -al
 
@@ -78,6 +80,18 @@ jobs:
               rm "$file"
             else
               echo "Keeping $file"
+            fi
+
+            # 判断是否优化 iOS 元数据
+            if [ "$OPTIMIZE_IOS_METADATA" = "true" ]; then
+              echo "Optimizing iOS metadata..."
+              # 删除 __MACOSX 文件夹
+              if [ -d "$base_name/__MACOSX" ]; then
+                echo "Removing __MACOSX folder"
+                rm -rf "$base_name/__MACOSX"
+              fi
+              # 删除 .DS_Store 文件
+              find "$base_name" -name ".DS_Store" -type f -exec rm -f {} +
             fi
           done
 
