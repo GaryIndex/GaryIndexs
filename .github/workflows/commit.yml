@@ -8,109 +8,91 @@ on:
       - '*.tar.bz2'
       - '*.tar.xz'
       - '*.rar'
-      - '*.7z'  # 监控任何压缩文件的变化
+      - '*.7z'
 
 jobs:
   unzip:
     runs-on: ubuntu-latest
-
     permissions:
-      contents: write  # 允许 GitHub Actions 写入仓库内容
+      contents: write
+
+    env:
+      NEED_EXTRACTION: "true"            # 是否需要解压文件
+      USE_ZIP_NAME_AS_DIRECTORY: "false" # 是否使用 ZIP 名称作为目录
+      DELETE_AFTER_EXTRACTION: "true"    # 解压后是否删除压缩包
 
     steps:
-      # 第一步：配置是否需要解压、是否使用 ZIP 名称作为目录、是否删除压缩包
-      - name: Configure extraction options
-        env:
-          NEED_EXTRACTION: "true"            # 设置为 false 时跳过解压
-          USE_ZIP_NAME_AS_DIRECTORY: "false"  # 是否使用 ZIP 名称作为目录
-          DELETE_AFTER_EXTRACTION: "true"   # 是否删除压缩包
-        run: |
-          if [ "$NEED_EXTRACTION" = "false" ]; then
-            echo "Skipping extraction as NEED_EXTRACTION is set to false."
-            exit 0
-          fi
-
-      # 第二步：检出仓库内容
+      # 检出代码库
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # 第三步：安装所需的解压工具
+      # 安装必要的解压工具
       - name: Install necessary tools
         run: |
           sudo apt-get update
           sudo apt-get install -y unzip p7zip-full p7zip-rar rar tar
 
-      # 第四步：解压压缩文件
-      - name: Unzip the files
-        env:
-          USE_ZIP_NAME_AS_DIRECTORY: ${{ env.USE_ZIP_NAME_AS_DIRECTORY }}
-          DELETE_AFTER_EXTRACTION: ${{ env.DELETE_AFTER_EXTRACTION }}
+      # 调试环境变量和当前目录状态
+      - name: Debugging environment
         run: |
-          for file in $(find . -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.tar.bz2' -o -name '*.tar.xz' -o -name '*.rar' -o -name '*.7z' \)); do
+          echo "NEED_EXTRACTION=$NEED_EXTRACTION"
+          echo "USE_ZIP_NAME_AS_DIRECTORY=$USE_ZIP_NAME_AS_DIRECTORY"
+          echo "DELETE_AFTER_EXTRACTION=$DELETE_AFTER_EXTRACTION"
+          echo "Current directory structure:"
+          ls -al
+
+      # 判断是否需要解压
+      - name: Check if extraction is needed
+        if: env.NEED_EXTRACTION == 'true'
+        run: |
+          # 查找根目录下的压缩文件
+          for file in $(find . -maxdepth 1 -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.tar.bz2' -o -name '*.tar.xz' -o -name '*.rar' -o -name '*.7z' \)); do
             echo "Processing $file"
 
-            # 获取文件名称（无扩展名）
-            file_name=$(basename "$file")
-            file_name_no_ext=${file_name%.*}
-            temp_dir=$(mktemp -d)
-
-            # 根据文件类型解压
-            case "$file" in
-              *.zip)
-                unzip "$file" -d "$temp_dir"
-                ;;
-              *.tar.gz | *.tgz)
-                tar -xzf "$file" -C "$temp_dir"
-                ;;
-              *.tar.bz2)
-                tar -xjf "$file" -C "$temp_dir"
-                ;;
-              *.tar.xz)
-                tar -xJf "$file" -C "$temp_dir"
-                ;;
-              *.rar)
-                unrar x "$file" "$temp_dir"
-                ;;
-              *.7z)
-                7z x "$file" -o"$temp_dir"
-                ;;
-              *)
-                echo "Unsupported file format: $file"
-                continue
-                ;;
-            esac
-
-            # 根据 USE_ZIP_NAME_AS_DIRECTORY 决定是否使用文件名作为目录
+            # 判断是否使用 ZIP 名称作为目录
             if [ "$USE_ZIP_NAME_AS_DIRECTORY" = "true" ]; then
-              echo "Using ZIP name as directory for $file"
-              mkdir -p "$file_name_no_ext"
-              mv "$temp_dir"/* "$file_name_no_ext/"
+              echo "Using ZIP name as directory"
+              dir_name="${file%.*}"
+              mkdir -p "$dir_name"
+              if unzip "$file" -d "$dir_name"; then
+                echo "Successfully extracted $file to $dir_name"
+              else
+                echo "Error extracting $file"
+                exit 1
+              fi
             else
-              echo "Extracting files directly to current directory for $file"
-              mv "$temp_dir"/* .
+              echo "Extracting directly into the current directory"
+              if unzip "$file" -d .; then
+                echo "Successfully extracted $file"
+              else
+                echo "Error extracting $file"
+                exit 1
+              fi
             fi
 
-            # 清理临时目录
-            rm -rf "$temp_dir"
-
-            # 根据 DELETE_AFTER_EXTRACTION 决定是否删除压缩包
+            # 判断是否删除压缩包
             if [ "$DELETE_AFTER_EXTRACTION" = "true" ]; then
-              echo "Deleting $file as DELETE_AFTER_EXTRACTION is set to true."
+              echo "Deleting $file"
               rm "$file"
             else
-              echo "Keeping $file as DELETE_AFTER_EXTRACTION is set to false."
+              echo "Keeping $file"
             fi
           done
 
-      # 第五步：配置 git 用户并提交更改
+      # 如果不需要解压，只输出调试信息
+      - name: Skip extraction
+        if: env.NEED_EXTRACTION != 'true'
+        run: |
+          echo "Extraction is disabled. Skipping."
+          echo "Current directory structure:"
+          ls -al
+
+      # 提交解压后的更改
       - name: Commit and push changes
+        if: env.NEED_EXTRACTION == 'true'
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          
-          # 检查是否有更改
           git add .
           git diff --cached --quiet || git commit -m "Unzipped files"
-          
-          # 提交更改
           git push
