@@ -1,22 +1,24 @@
-# Hello, I'm [Your Name] 👋
+# Hi, I'm [Your Name] 👋
 
-Welcome to my GitHub profile! Here you will find my projects and contributions.
+Welcome to my GitHub profile! I am a passionate developer sharing open-source projects and collaborating with awesome people.
 
 ---
 
 ### 🧑‍💻 About Me
 
-- 💻 I’m a passionate developer.
-- 🌍 I love learning new technologies.
-- 📚 Currently exploring **React** and **Node.js**.
-- 🔭 I’m open to collaborate on exciting open-source projects.
+- 🌱 Currently learning **React** and **Node.js**.
+- 💻 I'm a full-stack developer.
+- 📫 How to reach me:  
+  - [Telegram](https://t.me/yourusername)
+  - [Email](mailto:your-email@example.com)
 
 ---
 
 ### 🛠 Technologies & Tools
 
-- **Languages**: Python, JavaScript, Java
+- **Languages**: Python, JavaScript, Java, C++
 - **Frameworks**: React, Django, Express
+- **Databases**: MySQL, MongoDB
 - **Tools**: Git, Docker, VS Code, Firebase
 
 ---
@@ -31,13 +33,22 @@ Welcome to my GitHub profile! Here you will find my projects and contributions.
 
 ---
 
-### 📬 Contact
+### 📱 Social Links
 
-- Email: [your-email@example.com](mailto:your-email@example.com)
-- LinkedIn: [your-name](https://www.linkedin.com/in/your-name)
-- Twitter: [@your-username](https://twitter.com/your-username)
+![Telegram](https://img.shields.io/badge/Telegram-%40yourusername-0088cc?style=flat-square&logo=telegram&logoColor=white)  
+[Telegram](https://t.me/yourusername)
+
+![LinkedIn](https://img.shields.io/badge/LinkedIn-your%20name-blue?style=flat-square&logo=linkedin&logoColor=white)  
+[LinkedIn](https://www.linkedin.com/in/your-name)
 
 ---
 
-> "Keep it simple, keep it clean."  
-> — Your Name
+### 🌍 Visit My Portfolio
+
+![My Portfolio](https://via.placeholder.com/1200x400/000000/FFFFFF?text=My+Portfolio)  
+[Visit my portfolio](https://your-portfolio-link.com)
+
+---
+
+> "Simplicity is the ultimate sophistication."  
+> — Leonardo da Vinci
