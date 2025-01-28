@@ -3,12 +3,12 @@ name: Unzip and Commit Changes
 on:
   push:
     paths:
-      - '**/*.zip'
-      - '**/*.tar.gz'
-      - '**/*.tar.bz2'
-      - '**/*.tar.xz'
-      - '**/*.rar'
-      - '**/*.7z'  # 监控任何压缩文件的变化
+      - '*.zip'
+      - '*.tar.gz'
+      - '*.tar.bz2'
+      - '*.tar.xz'
+      - '*.rar'
+      - '*.7z'  # 监控任何压缩文件的变化
 
 jobs:
   unzip:
@@ -22,8 +22,8 @@ jobs:
       - name: Configure extraction options
         env:
           NEED_EXTRACTION: "true"            # 设置为 false 时跳过解压
-          USE_ZIP_NAME_AS_DIRECTORY: " false"  # 是否使用 ZIP 名称作为目录
-          DELETE_AFTER_EXTRACTION: "true"   # 是否删除压缩包
+          USE_ZIP_NAME_AS_DIRECTORY: "true"  # 是否使用 ZIP 名称作为目录
+          DELETE_AFTER_EXTRACTION: "false"   # 是否删除压缩包
         run: |
           if [ "$NEED_EXTRACTION" = "false" ]; then
             echo "Skipping extraction as NEED_EXTRACTION is set to false."
